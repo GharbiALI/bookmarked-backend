@@ -3,7 +3,7 @@ import {
   registerUser,
   checkEmailTaken,
   checkUsernameTaken,
-} from "../../src/services/signup.service";
+} from "../../src/services/user.service";
 
 jest.mock("../../src/repository/user.repository");
 

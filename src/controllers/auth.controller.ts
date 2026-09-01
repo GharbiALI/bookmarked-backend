@@ -3,8 +3,8 @@ import {
   registerUser,
   checkEmailTaken,
   checkUsernameTaken,
-} from "../services/signup.service";
-import { mapSignupResponse } from "../mapper/signup.mapper";
+} from "../services/user.service";
+import { mapSignupResponse } from "../mapper/user.mapper";
 import { generateToken } from "../auth/auth.services";
 import { IUser } from "../schemas/user.schemas";
 
@@ -49,3 +49,4 @@ export const signup = async (
     });
   }
 };
+

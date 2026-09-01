@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { validateSignupMiddleware } from "../../src/middlewares/signup.middleware";
+import { validateSignupMiddleware } from "../../src/middlewares/user.middleware";
 
 const mockRequest = (body: object): Partial<Request> => ({ body });
 

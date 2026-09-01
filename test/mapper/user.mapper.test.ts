@@ -1,4 +1,4 @@
-import { mapSignupResponse } from "../../src/mapper/signup.mapper";
+import { mapSignupResponse } from "../../src/mapper/user.mapper";
 import { IUser } from "../../src/schemas/user.schemas";
 
 describe("mapSignupResponse", () => {
