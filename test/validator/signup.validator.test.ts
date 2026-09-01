@@ -1,4 +1,4 @@
-import { validateSignup } from "../../src/validator/signup.validator";
+import { validateSignup } from "../../src/validator/user.validator";
 
 describe("Signup Validator", () => {
   describe("validateSignup", () => {
