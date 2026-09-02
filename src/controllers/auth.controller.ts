@@ -4,7 +4,7 @@ import {
   checkEmailTaken,
   checkUsernameTaken,
 } from "../services/user.service";
-import { mapSignupResponse } from "../mapper/user.mapper";
+import { mapAuthResponse  } from "../mapper/user.mapper";
 import { generateToken } from "../auth/auth.services";
 import { IUser } from "../schemas/user.schemas";
 
@@ -39,7 +39,7 @@ export const signup = async (
     return res.status(201).json({
       success: true,
       message: "User registered successfully",
-      data: mapSignupResponse(user, token),
+      data: mapAuthResponse(user, token),
     });
 
   } catch (err) {
