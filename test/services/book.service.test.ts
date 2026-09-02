@@ -1,5 +1,5 @@
 import * as bookRepository from "../../src/repository/book.repository";
-import { listBooks } from "../../src/services/book.service";
+import { listBooks, getBook } from "../../src/services/book.service";
 
 jest.mock("../../src/repository/book.repository");
 
@@ -35,6 +35,32 @@ describe("book.service", () => {
 
       //then
       expect(result).toEqual([]);
+    });
+  });
+
+  describe("get Book by Id", () => {
+    it("should return the book when found", async () => {
+      //given
+      const fakeBook = { title: "Atomic Habits", author: "James Clear" };
+      (bookRepository.findBookById as jest.Mock).mockResolvedValue(fakeBook);
+
+      //when
+      const result = await getBook("someBookId");
+
+      //then
+      expect(bookRepository.findBookById).toHaveBeenCalledWith("someBookId");
+      expect(result).toEqual(fakeBook);
+    });
+
+    it("should return null when the book is not found", async () => {
+      //given
+      (bookRepository.findBookById as jest.Mock).mockResolvedValue(null);
+
+      //when
+      const result = await getBook("someBookId");
+
+      //then
+      expect(result).toBeNull();
     });
   });
 
