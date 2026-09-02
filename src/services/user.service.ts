@@ -7,7 +7,7 @@ import {
 
 export const checkEmailTaken = async (email: string) => findUserByEmail(email);
 
-export const checkUsernameTaken = async (username: string) =>
+export const getUserByUsername  = async (username: string) =>
   findUserByUsername(username);
 
 export const registerUser = async (

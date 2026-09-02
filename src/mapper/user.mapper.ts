@@ -6,15 +6,15 @@ export interface UserResponse {
   email: string;
 }
 
-export interface SignupResponse {
+export interface AuthResponse {
   user: UserResponse;
   token: string;
 }
 
-export const mapSignupResponse = (
+export const mapAuthResponse = (
   user: IUser & { _id: unknown },
   token: string,
-): SignupResponse => {
+): AuthResponse => {
   return {
     user: {
       id: String(user._id),

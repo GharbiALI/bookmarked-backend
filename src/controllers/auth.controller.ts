@@ -1,10 +1,11 @@
 import { Request, Response } from "express";
+import bcrypt from "bcryptjs";
 import {
   registerUser,
   checkEmailTaken,
-  checkUsernameTaken,
+  getUserByUsername ,
 } from "../services/user.service";
-import { mapSignupResponse } from "../mapper/user.mapper";
+import { mapAuthResponse  } from "../mapper/user.mapper";
 import { generateToken } from "../auth/auth.services";
 import { IUser } from "../schemas/user.schemas";
 
@@ -25,7 +26,7 @@ export const signup = async (
       });
     }
 
-    const existingUsername = await checkUsernameTaken(username);
+    const existingUsername = await getUserByUsername (username);
     if (existingUsername) {
       return res.status(409).json({
         success: false,
@@ -39,7 +40,7 @@ export const signup = async (
     return res.status(201).json({
       success: true,
       message: "User registered successfully",
-      data: mapSignupResponse(user, token),
+      data: mapAuthResponse(user, token),
     });
 
   } catch (err) {
@@ -50,3 +51,41 @@ export const signup = async (
   }
 };
 
+export const login = async (
+  req: Request,
+  res: Response,
+): Promise<Response> => {
+  try {
+    const { username, password } = req.body;
+
+    const user = (await getUserByUsername(username)) as UserDoc | null;
+    if (!user) {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid username or password",
+      });
+    }
+
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid username or password",
+      });
+    }
+
+    const token = generateToken(user._id, user.username);
+
+    return res.status(200).json({
+      success: true,
+      message: "Login successful",
+      data: mapAuthResponse(user, token),
+    });
+
+  } catch (err) {
+    return res.status(500).json({
+      success: false,
+      message: "Failed to login",
+    });
+  }
+};

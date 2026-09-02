@@ -1,7 +1,7 @@
-import { mapSignupResponse } from "../../src/mapper/user.mapper";
+import { mapAuthResponse } from "../../src/mapper/user.mapper";
 import { IUser } from "../../src/schemas/user.schemas";
 
-describe("mapSignupResponse", () => {
+describe("mapAuthResponse", () => {
 
     it("should map user object and token to response with required fields", () => {
       //given
@@ -14,7 +14,7 @@ describe("mapSignupResponse", () => {
       const token = "fakeToken";
 
       //when
-      const result = mapSignupResponse(mockUser, token);
+      const result = mapAuthResponse(mockUser, token);
 
       //then
       expect(result.user.id).toBe(String(mockUser._id));
@@ -34,7 +34,7 @@ describe("mapSignupResponse", () => {
       const token = "anotherFakeToken";
 
       //when
-      const result = mapSignupResponse(mockUser, token);
+      const result = mapAuthResponse(mockUser, token);
 
       //then
       expect(result.user).not.toHaveProperty("password");

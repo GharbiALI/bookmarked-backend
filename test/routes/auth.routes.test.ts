@@ -109,3 +109,117 @@ describe("Signup routes integration", () => {
     });
   });
 });
+
+describe("Login routes integration", () => {
+  beforeAll(async () => {
+    await connectTestDB();
+  });
+
+  afterAll(async () => {
+    await disconnectTestDB();
+  });
+
+  afterEach(async () => {
+    await clearTestDB();
+  });
+
+  const signupPayload = {
+    username: "ali",
+    email: "ali@example.com",
+    password: "Password123!",
+  };
+
+  describe("POST /api/auth/login", () => {
+    it("should return 200 with user and token on successful login", async () => {
+      //given
+      await request(app).post("/api/auth/signup").send(signupPayload);
+
+      // When
+      const res = await request(app).post("/api/auth/login").send({
+        username: "ali",
+        password: "Password123!",
+      });
+
+      // Then
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
+      expect(res.body.data).toHaveProperty("token");
+      expect(res.body.data.user).toMatchObject({
+        username: "ali",
+        email: "ali@example.com",
+      });
+    });
+
+    it("should not expose the password in the response", async () => {
+      //given
+      await request(app).post("/api/auth/signup").send(signupPayload);
+
+      // When
+      const res = await request(app).post("/api/auth/login").send({
+        username: "ali",
+        password: "Password123!",
+      });
+
+      // Then
+      expect(res.status).toBe(200);
+      expect(res.body.data.user).not.toHaveProperty("password");
+    });
+
+    it("should return 401 when username does not exist", async () => {
+      //given (no user created)
+
+      // When
+      const res = await request(app).post("/api/auth/login").send({
+        username: "ghost",
+        password: "Password123!",
+      });
+
+      // Then
+      expect(res.status).toBe(401);
+      expect(res.body).toHaveProperty(
+        "message",
+        "Invalid username or password",
+      );
+    });
+
+    it("should return 401 when password is incorrect", async () => {
+      //given
+      await request(app).post("/api/auth/signup").send(signupPayload);
+
+      // When
+      const res = await request(app).post("/api/auth/login").send({
+        username: "ali",
+        password: "WrongPassword123!",
+      });
+
+      // Then
+      expect(res.status).toBe(401);
+      expect(res.body).toHaveProperty(
+        "message",
+        "Invalid username or password",
+      );
+    });
+
+    it("should return 400 when login data is invalid", async () => {
+      //given
+
+      // When
+      const res = await request(app).post("/api/auth/login").send({
+        username: "",
+        password: "",
+      });
+
+      // Then
+      expect(res.status).toBe(400);
+      expect(res.body.success).toBe(false);
+      expect(res.body.errors).toContainEqual({
+        field: "username",
+        message: "Username is required",
+      });
+      expect(res.body.errors).toContainEqual({
+        field: "password",
+        message: "Password is required",
+      });
+    });
+  });
+});
