@@ -1,4 +1,4 @@
-import { validateSignup } from "../../src/validator/user.validator";
+import { validateSignup,validateLogin } from "../../src/validator/user.validator";
 
 describe("Signup Validator", () => {
   describe("validateSignup", () => {
@@ -125,6 +125,66 @@ describe("Signup Validator", () => {
 
       //then
       expect(result).toHaveLength(3);
+    });
+
+  });
+});
+
+describe("Login Validator", () => {
+  describe("validateLogin", () => {
+
+    it("should return null when all inputs are valid", () => {
+      //given
+      const username = "ali";
+      const password = "Password123!";
+
+      //when
+      const result = validateLogin(username, password);
+
+      //then
+      expect(result).toBeNull();
+    });
+
+    it("should return error when username is empty", () => {
+      //given
+      const username = "";
+      const password = "Password123!";
+
+      //when
+      const result = validateLogin(username, password);
+
+      //then
+      expect(result).toContainEqual({
+        field: "username",
+        message: "Username is required",
+      });
+    });
+
+    it("should return error when password is empty", () => {
+      //given
+      const username = "ali";
+      const password = "";
+
+      //when
+      const result = validateLogin(username, password);
+
+      //then
+      expect(result).toContainEqual({
+        field: "password",
+        message: "Password is required",
+      });
+    });
+
+    it("should return multiple errors when both fields are empty", () => {
+      //given
+      const username = "";
+      const password = "";
+
+      //when
+      const result = validateLogin(username, password);
+
+      //then
+      expect(result).toHaveLength(2);
     });
 
   });
