@@ -6,3 +6,9 @@ export const findBooksByUserId = async (
 ): Promise<(IBook & { _id: Types.ObjectId })[]> => {
   return await Book.find({ userId }).sort({ createdAt: -1 });
 };
+
+export const findBookById = async (
+  id: string,
+): Promise<(IBook & { _id: Types.ObjectId }) | null> => {
+  return await Book.findById(id);
+};
