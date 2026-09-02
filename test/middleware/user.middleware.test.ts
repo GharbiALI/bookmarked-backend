@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { validateSignupMiddleware } from "../../src/middlewares/user.middleware";
+import { validateSignupMiddleware, validateLoginMiddleware  } from "../../src/middlewares/user.middleware";
 
 const mockRequest = (body: object): Partial<Request> => ({ body });
 
@@ -93,6 +93,73 @@ describe("signup.middleware", () => {
 
       //when
       validateSignupMiddleware(req as Request, res as Response, mockNext);
+
+      //then
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(mockNext).not.toHaveBeenCalled();
+    });
+  });
+});
+
+describe("login.middleware", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  describe("validateLoginMiddleware", () => {
+    it("should call next() when all inputs are valid", () => {
+      //given
+      const req = mockRequest({
+        username: "ali",
+        password: "Password123!",
+      });
+      const res = mockResponse();
+
+      //when
+      validateLoginMiddleware(req as Request, res as Response, mockNext);
+
+      //then
+      expect(mockNext).toHaveBeenCalledTimes(1);
+      expect(res.status).not.toHaveBeenCalled();
+    });
+
+    it("should respond with 400 when username is missing", () => {
+      //given
+      const req = mockRequest({
+        password: "Password123!",
+      });
+      const res = mockResponse();
+
+      //when
+      validateLoginMiddleware(req as Request, res as Response, mockNext);
+
+      //then
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(mockNext).not.toHaveBeenCalled();
+    });
+
+    it("should respond with 400 when password is missing", () => {
+      //given
+      const req = mockRequest({
+        username: "ali",
+      });
+      const res = mockResponse();
+
+      //when
+      validateLoginMiddleware(req as Request, res as Response, mockNext);
+
+      //then
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(mockNext).not.toHaveBeenCalled();
+    });
+
+    it("should respond with 400 when body is empty", () => {
+      //given
+      const req = mockRequest({});
+      const res = mockResponse();
+
+      //when
+      validateLoginMiddleware(req as Request, res as Response, mockNext);
 
       //then
       expect(res.status).toHaveBeenCalledWith(400);
