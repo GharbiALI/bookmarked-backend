@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import {
   registerUser,
   checkEmailTaken,
-  checkUsernameTaken,
+  getUserByUsername ,
 } from "../services/user.service";
 import { mapAuthResponse  } from "../mapper/user.mapper";
 import { generateToken } from "../auth/auth.services";
@@ -25,7 +25,7 @@ export const signup = async (
       });
     }
 
-    const existingUsername = await checkUsernameTaken(username);
+    const existingUsername = await getUserByUsername (username);
     if (existingUsername) {
       return res.status(409).json({
         success: false,
