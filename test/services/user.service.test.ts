@@ -2,7 +2,7 @@ import * as userRepository from "../../src/repository/user.repository";
 import {
   registerUser,
   checkEmailTaken,
-  checkUsernameTaken,
+  getUserByUsername ,
 } from "../../src/services/user.service";
 
 jest.mock("../../src/repository/user.repository");
@@ -46,7 +46,7 @@ describe("signup.service", () => {
 
     (userRepository.findUserByUsername as jest.Mock).mockResolvedValue(fakeUser);
     //when
-    const result = await checkUsernameTaken("alice");
+    const result = await getUserByUsername ("alice");
     //then
     expect(result).toEqual(fakeUser);
   });
