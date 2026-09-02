@@ -45,3 +45,26 @@ export const validateSignup = (
 
   return errors.length > 0 ? errors : null;
 };
+
+export const validateLogin = (
+  username: string,
+  password: string,
+): ValidationError[] | null => {
+  const errors: ValidationError[] = [];
+
+  if (!username || validator.isEmpty(username.trim())) {
+    errors.push({
+      field: "username",
+      message: "Username is required",
+    });
+  }
+
+  if (!password || validator.isEmpty(password.trim())) {
+    errors.push({
+      field: "password",
+      message: "Password is required",
+    });
+  }
+
+  return errors.length > 0 ? errors : null;
+};
