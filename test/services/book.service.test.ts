@@ -1,10 +1,9 @@
 import * as bookRepository from "../../src/repository/book.repository";
-import { listBooks, getBook, addBook } from "../../src/services/book.service";
+import { listBooks, getBook, addBook, editBook } from "../../src/services/book.service";
 
 jest.mock("../../src/repository/book.repository");
 
 describe("book.service", () => {
-
   beforeEach(() => {
     jest.clearAllMocks();
   });
@@ -16,13 +15,17 @@ describe("book.service", () => {
         { title: "Atomic Habits", author: "James Clear" },
         { title: "Deep Work", author: "Cal Newport" },
       ];
-      (bookRepository.findBooksByUserId as jest.Mock).mockResolvedValue(fakeBooks);
+      (bookRepository.findBooksByUserId as jest.Mock).mockResolvedValue(
+        fakeBooks,
+      );
 
       //when
       const result = await listBooks("someUserId");
 
       //then
-      expect(bookRepository.findBooksByUserId).toHaveBeenCalledWith("someUserId");
+      expect(bookRepository.findBooksByUserId).toHaveBeenCalledWith(
+        "someUserId",
+      );
       expect(result).toEqual(fakeBooks);
     });
 
@@ -67,9 +70,15 @@ describe("book.service", () => {
   describe("addBook", () => {
     it("should create and return the new book", async () => {
       //given
-      const bookData = { title: "Clean Code", author: "Robert C. Martin", pages: 464 };
+      const bookData = {
+        title: "Clean Code",
+        author: "Robert C. Martin",
+        pages: 464,
+      };
       const fakeCreatedBook = { ...bookData, _id: "someId" };
-      (bookRepository.createBook as jest.Mock).mockResolvedValue(fakeCreatedBook);
+      (bookRepository.createBook as jest.Mock).mockResolvedValue(
+        fakeCreatedBook,
+      );
 
       //when
       const result = await addBook(bookData);
@@ -80,4 +89,38 @@ describe("book.service", () => {
     });
   });
 
+  describe("editBook", () => {
+    it("should update and return the book", async () => {
+      //given
+      const updates = { title: "Clean Code (2nd ed.)" };
+      const fakeUpdatedBook = {
+        title: "Clean Code (2nd ed.)",
+        author: "Robert C. Martin",
+      };
+      (bookRepository.updateBookById as jest.Mock).mockResolvedValue(
+        fakeUpdatedBook,
+      );
+
+      //when
+      const result = await editBook("someBookId", updates);
+
+      //then
+      expect(bookRepository.updateBookById).toHaveBeenCalledWith(
+        "someBookId",
+        updates,
+      );
+      expect(result).toEqual(fakeUpdatedBook);
+    });
+
+    it("should return null when the book to update does not exist", async () => {
+      //given
+      (bookRepository.updateBookById as jest.Mock).mockResolvedValue(null);
+
+      //when
+      const result = await editBook("someBookId", { title: "New Title" });
+
+      //then
+      expect(result).toBeNull();
+    });
+  });
 });
