@@ -208,6 +208,7 @@ describe("Book routes integration", () => {
       expect(res.body.data.title).toBe("Atomic Habits");
     });
   });
+
   describe("POST /api/books", () => {
     it("should return 401 when no token is provided", async () => {
       // When
@@ -277,6 +278,129 @@ describe("Book routes integration", () => {
       // Then
       expect(res.status).toBe(201);
       expect(res.body.data.status).toBe("to-read");
+    });
+  });
+
+  describe("PUT /api/books/:id", () => {
+    it("should return 401 when no token is provided", async () => {
+      // When
+      const res = await request(app)
+        .put("/api/books/64f1a2b3c4d5e6f7a8b9c0d1")
+        .send({ title: "Updated Title", author: "Someone", pages: 100 });
+
+      // Then
+      expect(res.status).toBe(401);
+    });
+
+    it("should return 400 when the id is not a valid ObjectId", async () => {
+      //given
+      const token = await getAuthToken();
+
+      // When
+      const res = await request(app)
+        .put("/api/books/not-a-valid-id")
+        .set("Authorization", `Bearer ${token}`)
+        .send({ title: "Updated Title", author: "Someone", pages: 100 });
+
+      // Then
+      expect(res.status).toBe(400);
+    });
+
+    it("should return 400 when the update data is invalid", async () => {
+      //given
+      const token = await getAuthToken();
+      const decoded: { userId: string } = JSON.parse(
+        Buffer.from(token.split(".")[1], "base64").toString(),
+      );
+
+      const myBook = await Book.create({
+        title: "Clean Code",
+        author: "Robert C. Martin",
+        pages: 464,
+        status: "to-read",
+        rating: 0,
+        userId: decoded.userId,
+      });
+
+      // When
+      const res = await request(app)
+        .put(`/api/books/${myBook._id}`)
+        .set("Authorization", `Bearer ${token}`)
+        .send({ title: "C", author: "Robert C. Martin", pages: 464 });
+
+      // Then
+      expect(res.status).toBe(400);
+    });
+
+    it("should return 404 when the book does not exist", async () => {
+      //given
+      const token = await getAuthToken();
+
+      // When
+      const res = await request(app)
+        .put("/api/books/64f1a2b3c4d5e6f7a8b9c0d1")
+        .set("Authorization", `Bearer ${token}`)
+        .send({ title: "Updated Title", author: "Someone", pages: 100 });
+
+      // Then
+      expect(res.status).toBe(404);
+    });
+
+    it("should return 404 when the book belongs to another user", async () => {
+      //given
+      const token = await getAuthToken();
+
+      const otherUsersBook = await Book.create({
+        title: "Design Patterns",
+        author: "Erich Gamma",
+        pages: 395,
+        status: "reading",
+        rating: 4,
+        userId: "64f1a2b3c4d5e6f7a8b9c0d1",
+      });
+
+      // When
+      const res = await request(app)
+        .put(`/api/books/${otherUsersBook._id}`)
+        .set("Authorization", `Bearer ${token}`)
+        .send({ title: "Hacked Title", author: "Erich Gamma", pages: 395 });
+
+      // Then
+      expect(res.status).toBe(404);
+    });
+
+    it("should return 200 and the updated book when it belongs to the logged-in user", async () => {
+      //given
+      const token = await getAuthToken();
+      const decoded: { userId: string } = JSON.parse(
+        Buffer.from(token.split(".")[1], "base64").toString(),
+      );
+
+      const myBook = await Book.create({
+        title: "Clean Code",
+        author: "Robert C. Martin",
+        pages: 464,
+        status: "to-read",
+        rating: 0,
+        userId: decoded.userId,
+      });
+
+      // When
+      const res = await request(app)
+        .put(`/api/books/${myBook._id}`)
+        .set("Authorization", `Bearer ${token}`)
+        .send({
+          title: "Clean Code",
+          author: "Robert C. Martin",
+          pages: 464,
+          status: "finished",
+          rating: 5,
+        });
+
+      // Then
+      expect(res.status).toBe(200);
+      expect(res.body.data.status).toBe("finished");
+      expect(res.body.data.rating).toBe(5);
     });
   });
 });
