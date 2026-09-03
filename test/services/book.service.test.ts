@@ -1,5 +1,11 @@
 import * as bookRepository from "../../src/repository/book.repository";
-import { listBooks, getBook, addBook, editBook } from "../../src/services/book.service";
+import {
+  listBooks,
+  getBook,
+  addBook,
+  editBook,
+  removeBook,
+} from "../../src/services/book.service";
 
 jest.mock("../../src/repository/book.repository");
 
@@ -118,6 +124,37 @@ describe("book.service", () => {
 
       //when
       const result = await editBook("someBookId", { title: "New Title" });
+
+      //then
+      expect(result).toBeNull();
+    });
+  });
+
+  describe("removeBook", () => {
+    it("should delete and return the removed book", async () => {
+      //given
+      const fakeDeletedBook = {
+        title: "Clean Code",
+        author: "Robert C. Martin",
+      };
+      (bookRepository.deleteBookById as jest.Mock).mockResolvedValue(
+        fakeDeletedBook,
+      );
+
+      //when
+      const result = await removeBook("someBookId");
+
+      //then
+      expect(bookRepository.deleteBookById).toHaveBeenCalledWith("someBookId");
+      expect(result).toEqual(fakeDeletedBook);
+    });
+
+    it("should return null when the book to delete does not exist", async () => {
+      //given
+      (bookRepository.deleteBookById as jest.Mock).mockResolvedValue(null);
+
+      //when
+      const result = await removeBook("someBookId");
 
       //then
       expect(result).toBeNull();
