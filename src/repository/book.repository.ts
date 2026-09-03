@@ -24,3 +24,7 @@ export const updateBookById = async (
 ): Promise<(IBook & { _id: Types.ObjectId }) | null> => {
   return await Book.findByIdAndUpdate(id, bookData, { new: true });
 };
+
+export const deleteBookById = async (id: string): Promise<IBook | null> => {
+  return await Book.findByIdAndDelete(id);
+};

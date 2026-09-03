@@ -403,4 +403,100 @@ describe("Book routes integration", () => {
       expect(res.body.data.rating).toBe(5);
     });
   });
+
+  describe("DELETE /api/books/:id", () => {
+    it("should return 401 when no token is provided", async () => {
+      // When
+      const res = await request(app).delete(
+        "/api/books/64f1a2b3c4d5e6f7a8b9c0d1",
+      );
+
+      // Then
+      expect(res.status).toBe(401);
+    });
+
+    it("should return 400 when the id is not a valid ObjectId", async () => {
+      //given
+      const token = await getAuthToken();
+
+      // When
+      const res = await request(app)
+        .delete("/api/books/not-a-valid-id")
+        .set("Authorization", `Bearer ${token}`);
+
+      // Then
+      expect(res.status).toBe(400);
+      expect(res.body.success).toBe(false);
+    });
+
+    it("should return 404 when the book does not exist", async () => {
+      //given
+      const token = await getAuthToken();
+
+      // When
+      const res = await request(app)
+        .delete("/api/books/64f1a2b3c4d5e6f7a8b9c0d1")
+        .set("Authorization", `Bearer ${token}`);
+
+      // Then
+      expect(res.status).toBe(404);
+      expect(res.body).toHaveProperty("message", "Book not found");
+    });
+
+    it("should return 404 when the book belongs to another user", async () => {
+      //given
+      const token = await getAuthToken();
+
+      const otherUsersBook = await Book.create({
+        title: "Someone Else's Book",
+        author: "A. Stranger",
+        pages: 100,
+        status: "reading",
+        rating: 3,
+        userId: "64f1a2b3c4d5e6f7a8b9c0d1",
+      });
+
+      // When
+      const res = await request(app)
+        .delete(`/api/books/${otherUsersBook._id}`)
+        .set("Authorization", `Bearer ${token}`);
+
+      // Then
+      expect(res.status).toBe(404);
+      expect(res.body).toHaveProperty("message", "Book not found");
+
+      const stillExists = await Book.findById(otherUsersBook._id);
+      expect(stillExists).not.toBeNull();
+    });
+
+    it("should return 200 and delete the book when it belongs to the logged-in user", async () => {
+      //given
+      const token = await getAuthToken();
+      const decoded: { userId: string } = JSON.parse(
+        Buffer.from(token.split(".")[1], "base64").toString(),
+      );
+
+      const myBook = await Book.create({
+        title: "Clean Code",
+        author: "Robert C. Martin",
+        pages: 464,
+        status: "to-read",
+        rating: 0,
+        userId: decoded.userId,
+      });
+
+      // When
+      const res = await request(app)
+        .delete(`/api/books/${myBook._id}`)
+        .set("Authorization", `Bearer ${token}`);
+
+      // Then
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
+      expect(res.body.data.id).toBe(String(myBook._id));
+
+      const deleted = await Book.findById(myBook._id);
+      expect(deleted).toBeNull();
+    });
+  });
 });
