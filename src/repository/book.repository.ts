@@ -17,3 +17,10 @@ export const createBook = async (bookData: Partial<IBook>): Promise<IBook> => {
   const book = new Book(bookData);
   return await book.save();
 };
+
+export const updateBookById = async (
+  id: string,
+  bookData: Partial<IBook>,
+): Promise<(IBook & { _id: Types.ObjectId }) | null> => {
+  return await Book.findByIdAndUpdate(id, bookData, { new: true });
+};
