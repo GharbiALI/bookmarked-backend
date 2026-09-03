@@ -1,9 +1,14 @@
 import { Types } from "mongoose";
 import { Response } from "express";
 import { AuthRequest } from "../auth/auth.middleware";
-import { listBooks, getBook, addBook, editBook } from "../services/book.service";
+import {
+  listBooks,
+  getBook,
+  addBook,
+  editBook,
+  removeBook,
+} from "../services/book.service";
 import { mapBookResponse } from "../mapper/book.mapper";
-import { IBook, Book } from "../schemas/book.schemas";
 
 export const listBooksHandler = async (
   req: AuthRequest,
@@ -114,7 +119,6 @@ export const updateBookHandler = async (
       message: "Book updated successfully",
       data: mapBookResponse(updated as typeof updated & { _id: unknown }),
     });
-
   } catch (err) {
     return res.status(500).json({
       success: false,
@@ -123,9 +127,29 @@ export const updateBookHandler = async (
   }
 };
 
-export const updateBookById = async (
-  id: string,
-  bookData: Partial<IBook>,
-): Promise<(IBook & { _id: Types.ObjectId }) | null> => {
-  return await Book.findByIdAndUpdate(id, bookData, { new: true });
+export const deleteBookHandler = async (
+  req: AuthRequest,
+  res: Response,
+): Promise<Response> => {
+  try {
+    const existing = await getBook(req.params.id);
+
+    if (!existing || existing.userId.toString() !== req.user?.userId) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Book not found" });
+    }
+
+    await removeBook(req.params.id);
+
+    return res.status(200).json({
+      success: true,
+      message: "Book deleted successfully",
+      data: { id: req.params.id },
+    });
+  } catch (err) {
+    return res
+      .status(500)
+      .json({ success: false, message: "Failed to delete book" });
+  }
 };
