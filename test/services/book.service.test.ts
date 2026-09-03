@@ -1,5 +1,5 @@
 import * as bookRepository from "../../src/repository/book.repository";
-import { listBooks, getBook } from "../../src/services/book.service";
+import { listBooks, getBook, addBook } from "../../src/services/book.service";
 
 jest.mock("../../src/repository/book.repository");
 
@@ -61,6 +61,22 @@ describe("book.service", () => {
 
       //then
       expect(result).toBeNull();
+    });
+  });
+
+  describe("addBook", () => {
+    it("should create and return the new book", async () => {
+      //given
+      const bookData = { title: "Clean Code", author: "Robert C. Martin", pages: 464 };
+      const fakeCreatedBook = { ...bookData, _id: "someId" };
+      (bookRepository.createBook as jest.Mock).mockResolvedValue(fakeCreatedBook);
+
+      //when
+      const result = await addBook(bookData);
+
+      //then
+      expect(bookRepository.createBook).toHaveBeenCalledWith(bookData);
+      expect(result).toEqual(fakeCreatedBook);
     });
   });
 

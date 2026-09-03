@@ -12,3 +12,8 @@ export const findBookById = async (
 ): Promise<(IBook & { _id: Types.ObjectId }) | null> => {
   return await Book.findById(id);
 };
+
+export const createBook = async (bookData: Partial<IBook>): Promise<IBook> => {
+  const book = new Book(bookData);
+  return await book.save();
+};

@@ -32,7 +32,6 @@ describe("Book routes integration", () => {
   };
 
   describe("GET /api/books", () => {
-
     it("should return 401 when no token is provided", async () => {
       // When
       const res = await request(app).get("/api/books");
@@ -118,11 +117,9 @@ describe("Book routes integration", () => {
       // Then
       expect(res.body.data[0]).not.toHaveProperty("userId");
     });
-
   });
 
-    describe("GET /api/books/:id", () => {
-
+  describe("GET /api/books/:id", () => {
     it("should return 401 when no token is provided", async () => {
       // When
       const res = await request(app).get("/api/books/64f1a2b3c4d5e6f7a8b9c0d1");
@@ -210,6 +207,76 @@ describe("Book routes integration", () => {
       expect(res.body.data.id).toBe(String(myBook._id));
       expect(res.body.data.title).toBe("Atomic Habits");
     });
+  });
+  describe("POST /api/books", () => {
+    it("should return 401 when no token is provided", async () => {
+      // When
+      const res = await request(app).post("/api/books").send({
+        title: "Clean Code",
+        author: "Robert C. Martin",
+        pages: 464,
+      });
 
+      // Then
+      expect(res.status).toBe(401);
+    });
+
+    it("should return 400 when required fields are missing", async () => {
+      //given
+      const token = await getAuthToken();
+
+      // When
+      const res = await request(app)
+        .post("/api/books")
+        .set("Authorization", `Bearer ${token}`)
+        .send({ title: "C" });
+
+      // Then
+      expect(res.status).toBe(400);
+      expect(res.body.success).toBe(false);
+    });
+
+    it("should return 201 and create the book for the logged-in user", async () => {
+      //given
+      const token = await getAuthToken();
+
+      // When
+      const res = await request(app)
+        .post("/api/books")
+        .set("Authorization", `Bearer ${token}`)
+        .send({
+          title: "Clean Code",
+          author: "Robert C. Martin",
+          genre: "Software Engineering",
+          pages: 464,
+          status: "to-read",
+          rating: 4,
+        });
+
+      // Then
+      expect(res.status).toBe(201);
+      expect(res.body.success).toBe(true);
+      expect(res.body.data.title).toBe("Clean Code");
+      expect(res.body.data).not.toHaveProperty("userId");
+    });
+
+    it("should default status to to-read when not provided", async () => {
+      //given
+      const token = await getAuthToken();
+
+      // When
+      const res = await request(app)
+        .post("/api/books")
+        .set("Authorization", `Bearer ${token}`)
+        .send({
+          title: "Refactoring",
+          author: "Martin Fowler",
+          pages: 448,
+        });
+
+      // Then
+      expect(res.status).toBe(201);
+      expect(res.body.data.status).toBe("to-read");
+    });
   });
 });
