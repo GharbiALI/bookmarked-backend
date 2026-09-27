@@ -1,9 +1,6 @@
 import validator from "validator";
-
-export interface ValidationError {
-  field: string;
-  message: string;
-}
+import { AuthMessages } from "../constants/messages";
+import { ValidationError } from "../types/api-responce";
 
 export const validateSignup = (
   username: string,
@@ -15,14 +12,14 @@ export const validateSignup = (
   if (!username || username.trim().length < 3) {
     errors.push({
       field: "username",
-      message: "Username must be at least 3 characters",
+      message: AuthMessages.USERNAME_TOO_SHORT,
     });
   }
 
   if (!email || !validator.isEmail(email)) {
     errors.push({
       field: "email",
-      message: "A valid email is required",
+      message: AuthMessages.EMAIL_INVALID,
     });
   }
 
@@ -38,8 +35,7 @@ export const validateSignup = (
   ) {
     errors.push({
       field: "password",
-      message:
-        "Password must be at least 12 characters and include uppercase, lowercase, number and symbol",
+      message: AuthMessages.PASSWORD_WEAK,
     });
   }
 
@@ -55,14 +51,14 @@ export const validateLogin = (
   if (!username || validator.isEmpty(username.trim())) {
     errors.push({
       field: "username",
-      message: "Username is required",
+      message: AuthMessages.USERNAME_REQUIRED,
     });
   }
 
   if (!password || validator.isEmpty(password.trim())) {
     errors.push({
       field: "password",
-      message: "Password is required",
+      message: AuthMessages.PASSWORD_REQUIRED,
     });
   }
 
