@@ -1,4 +1,5 @@
-import { IBook } from "../schemas/book.schemas";
+import { Types } from "mongoose";
+import { IBook, ReadStatus } from "../schemas/book.schemas";
 
 export interface BookResponse {
   id: string;
@@ -6,12 +7,12 @@ export interface BookResponse {
   author: string;
   genre: string;
   pages: number;
-  status: string;
+  status: ReadStatus;
   rating: number;
 }
 
 export const mapBookResponse = (
-  book: IBook & { _id: unknown },
+  book: IBook & { _id: Types.ObjectId },
 ): BookResponse => {
   return {
     id: String(book._id),
@@ -23,3 +24,7 @@ export const mapBookResponse = (
     rating: book.rating,
   };
 };
+
+export const mapBooksResponse = (
+  books: (IBook & { _id: Types.ObjectId })[],
+): BookResponse[] => books.map(mapBookResponse);

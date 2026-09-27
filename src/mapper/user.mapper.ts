@@ -1,3 +1,4 @@
+import { Types } from "mongoose";
 import { IUser } from "../schemas/user.schemas";
 
 export interface UserResponse {
@@ -12,7 +13,7 @@ export interface AuthResponse {
 }
 
 export const mapAuthResponse = (
-  user: IUser & { _id: unknown },
+  user: IUser & { _id: Types.ObjectId },
   token: string,
 ): AuthResponse => {
   return {

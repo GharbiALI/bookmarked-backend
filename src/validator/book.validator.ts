@@ -1,5 +1,6 @@
 import validator from "validator";
-import { ValidationError } from "./user.validator";
+import { BookMessages } from "../constants/messages";
+import { ValidationError } from "../types/api-responce";
 
 export const validateId = (id: string): ValidationError[] | null => {
   const errors: ValidationError[] = [];
@@ -7,7 +8,7 @@ export const validateId = (id: string): ValidationError[] | null => {
   if (!id || !validator.isMongoId(id)) {
     errors.push({
       field: "id",
-      message: "A valid book id is required",
+      message: BookMessages.INVALID_ID,
     });
   }
 
@@ -25,14 +26,14 @@ export const validateBook = (
   if (!title || !validator.isLength(title.trim(), { min: 2 })) {
     errors.push({
       field: "title",
-      message: "Title must be at least 2 characters",
+      message: BookMessages.TITLE_TOO_SHORT,
     });
   }
 
   if (!author || !validator.isLength(author.trim(), { min: 2 })) {
     errors.push({
       field: "author",
-      message: "Author must be at least 2 characters",
+      message: BookMessages.AUTHOR_TOO_SHORT,
     });
   }
 
@@ -43,7 +44,7 @@ export const validateBook = (
   ) {
     errors.push({
       field: "pages",
-      message: "Pages must be greater than 0",
+      message: BookMessages.PAGES_INVALID,
     });
   }
 
@@ -54,7 +55,7 @@ export const validateBook = (
   ) {
     errors.push({
       field: "rating",
-      message: "Rating must be between 0 and 5",
+      message: BookMessages.RATING_OUT_OF_RANGE,
     });
   }
 

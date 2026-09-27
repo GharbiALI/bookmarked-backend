@@ -1,12 +1,13 @@
 import { mapAuthResponse } from "../../src/mapper/user.mapper";
+import { Types } from "mongoose";
 import { IUser } from "../../src/schemas/user.schemas";
 
 describe("mapAuthResponse", () => {
 
     it("should map user object and token to response with required fields", () => {
       //given
-      const mockUser: IUser & { _id: unknown } = {
-        _id: "64f1a2b3c4d5e6f7a8b9c0d1",
+      const mockUser: IUser & { _id: Types.ObjectId } = {
+        _id: new Types.ObjectId("64f1a2b3c4d5e6f7a8b9c0d1"),
         username: "ali",
         email: "ali@example.com",
         password: "hashedPassword",
@@ -25,8 +26,8 @@ describe("mapAuthResponse", () => {
 
     it("should not include password in mapped response", () => {
       //given
-      const mockUser: IUser & { _id: unknown } = {
-        _id: "64f1a2b3c4d5e6f7a8b9c0d2",
+      const mockUser: IUser & { _id: Types.ObjectId } = {
+        _id: new Types.ObjectId("64f1a2b3c4d5e6f7a8b9c0d2"),
         username: "testuser",
         email: "test@example.com",
         password: "secretPassword",
