@@ -1,4 +1,4 @@
-import { Schema, model, Types } from "mongoose";
+import { Schema, model, Types, HydratedDocument } from "mongoose";
 
 export type ReadStatus = "reading" | "to-read" | "finished";
 
@@ -11,6 +11,8 @@ export interface IBook {
   rating: number;
   userId: Types.ObjectId;
 }
+
+export type BookDocument = HydratedDocument<IBook>;
 
 const bookSchema = new Schema<IBook>(
   {
