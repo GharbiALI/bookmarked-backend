@@ -1,5 +1,8 @@
-import { Request, Response, NextFunction } from "express";
+import { Request, NextFunction } from "express";
 import { verifyToken, JwtPayload } from "./auth.services";
+import { HttpStatusCode } from "../constants/http-status";
+import { AuthMessages } from "../constants/messages";
+import { TypedResponse } from "../types/api-response";
 
 export interface AuthRequest extends Request {
   user?: JwtPayload;
@@ -7,15 +10,15 @@ export interface AuthRequest extends Request {
 
 export const authenticate = (
   req: AuthRequest,
-  res: Response,
+  res: TypedResponse<never>,
   next: NextFunction,
 ): void => {
   const authHeader = req.headers.authorization;
 
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    res.status(401).json({
+    res.status(HttpStatusCode.UNAUTHORIZED).json({
       success: false,
-      message: "Unauthorized: No token provided",
+      message: AuthMessages.NO_TOKEN,
     });
     return;
   }
@@ -27,9 +30,9 @@ export const authenticate = (
     req.user = decoded;
     next();
   } catch {
-    res.status(401).json({
+    res.status(HttpStatusCode.UNAUTHORIZED).json({
       success: false,
-      message: "Unauthorized: Invalid or expired token",
+      message: AuthMessages.INVALID_TOKEN,
     });
   }
 };
