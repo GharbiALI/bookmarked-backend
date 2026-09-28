@@ -1,5 +1,4 @@
 import { Types } from "mongoose";
-import { Response } from "express";
 import { AuthRequest } from "../auth/auth.middleware";
 import {
   listBooks,
@@ -8,148 +7,145 @@ import {
   editBook,
   removeBook,
 } from "../services/book.service";
-import { mapBookResponse } from "../mapper/book.mapper";
+import { mapBookResponse, mapBooksResponse, BookResponse } from "../mapper/book.mapper";
+import { HttpStatusCode } from "../constants/http-status";
+import { BookMessages } from "../constants/messages";
+import { TypedResponse } from "../types/api-response";
 
 export const listBooksHandler = async (
   req: AuthRequest,
-  res: Response,
-): Promise<Response> => {
+  res: TypedResponse<BookResponse[]>,
+): Promise<TypedResponse<BookResponse[]>> => {
   try {
     const userId = req.user!.userId;
-
     const books = await listBooks(userId);
 
-    return res.status(200).json({
+    return res.status(HttpStatusCode.OK).json({
       success: true,
-      message: "Books fetched successfully",
-      data: books.map(mapBookResponse),
+      message: BookMessages.FETCH_SUCCESS,
+      data: mapBooksResponse(books),
     });
   } catch (err) {
-    return res.status(500).json({
+    return res.status(HttpStatusCode.INTERNAL_SERVER_ERROR).json({
       success: false,
-      message: "Failed to fetch books",
+      message: BookMessages.FETCH_FAILED,
     });
   }
 };
 
 export const getBookHandler = async (
   req: AuthRequest,
-  res: Response,
-): Promise<Response> => {
+  res: TypedResponse<BookResponse>,
+): Promise<TypedResponse<BookResponse>> => {
   try {
     const book = await getBook(req.params.id);
 
     if (!book || book.userId.toString() !== req.user!.userId) {
-      return res.status(404).json({
+      return res.status(HttpStatusCode.NOT_FOUND).json({
         success: false,
-        message: "Book not found",
+        message: BookMessages.NOT_FOUND,
       });
     }
 
-    return res.status(200).json({
+    return res.status(HttpStatusCode.OK).json({
       success: true,
-      message: "Book fetched successfully",
+      message: BookMessages.FETCH_ONE_SUCCESS,
       data: mapBookResponse(book),
     });
   } catch (err) {
-    return res.status(500).json({
+    return res.status(HttpStatusCode.INTERNAL_SERVER_ERROR).json({
       success: false,
-      message: "Failed to fetch book",
+      message: BookMessages.FETCH_ONE_FAILED,
     });
   }
 };
 
 export const createBookHandler = async (
   req: AuthRequest,
-  res: Response,
-): Promise<Response> => {
+  res: TypedResponse<BookResponse>,
+): Promise<TypedResponse<BookResponse>> => {
   try {
     const userId = new Types.ObjectId(req.user!.userId);
     const { title, author, genre, pages, status, rating } = req.body;
 
-    const book = await addBook({
-      title,
-      author,
-      genre,
-      pages,
-      status,
-      rating,
-      userId,
-    });
+    const book = await addBook({ title, author, genre, pages, status, rating, userId });
 
-    return res.status(201).json({
+    return res.status(HttpStatusCode.CREATED).json({
       success: true,
-      message: "Book created successfully",
-      data: mapBookResponse(book as typeof book & { _id: unknown }),
+      message: BookMessages.CREATE_SUCCESS,
+      data: mapBookResponse(book),
     });
   } catch (err) {
-    return res.status(500).json({
+    return res.status(HttpStatusCode.INTERNAL_SERVER_ERROR).json({
       success: false,
-      message: "Failed to create book",
+      message: BookMessages.CREATE_FAILED,
     });
   }
 };
 
 export const updateBookHandler = async (
   req: AuthRequest,
-  res: Response,
-): Promise<Response> => {
+  res: TypedResponse<BookResponse>,
+): Promise<TypedResponse<BookResponse>> => {
   try {
     const existing = await getBook(req.params.id);
 
     if (!existing || existing.userId.toString() !== req.user!.userId) {
-      return res.status(404).json({
+      return res.status(HttpStatusCode.NOT_FOUND).json({
         success: false,
-        message: "Book not found",
+        message: BookMessages.NOT_FOUND,
       });
     }
 
     const { title, author, genre, pages, status, rating } = req.body;
-    const updated = await editBook(req.params.id, {
-      title,
-      author,
-      genre,
-      pages,
-      status,
-      rating,
-    });
+    const updated = await editBook(req.params.id, { title, author, genre, pages, status, rating });
 
-    return res.status(200).json({
+    // The book can be deleted between the ownership check and the update.
+    if (!updated) {
+      return res.status(HttpStatusCode.NOT_FOUND).json({
+        success: false,
+        message: BookMessages.NOT_FOUND,
+      });
+    }
+
+    return res.status(HttpStatusCode.OK).json({
       success: true,
-      message: "Book updated successfully",
-      data: mapBookResponse(updated as typeof updated & { _id: unknown }),
+      message: BookMessages.UPDATE_SUCCESS,
+      data: mapBookResponse(updated),
     });
   } catch (err) {
-    return res.status(500).json({
+    return res.status(HttpStatusCode.INTERNAL_SERVER_ERROR).json({
       success: false,
-      message: "Failed to update book",
+      message: BookMessages.UPDATE_FAILED,
     });
   }
 };
 
 export const deleteBookHandler = async (
   req: AuthRequest,
-  res: Response,
-): Promise<Response> => {
+  res: TypedResponse<{ id: string }>,
+): Promise<TypedResponse<{ id: string }>> => {
   try {
     const existing = await getBook(req.params.id);
 
     if (!existing || existing.userId.toString() !== req.user?.userId) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Book not found" });
+      return res.status(HttpStatusCode.NOT_FOUND).json({
+        success: false,
+        message: BookMessages.NOT_FOUND,
+      });
     }
 
     await removeBook(req.params.id);
 
-    return res.status(200).json({
+    return res.status(HttpStatusCode.OK).json({
       success: true,
-      message: "Book deleted successfully",
+      message: BookMessages.DELETE_SUCCESS,
       data: { id: req.params.id },
     });
   } catch (err) {
-    return res
-      .status(500)
-      .json({ success: false, message: "Failed to delete book" });
+    return res.status(HttpStatusCode.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      message: BookMessages.DELETE_FAILED,
+    });
   }
 };

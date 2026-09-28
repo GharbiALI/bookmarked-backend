@@ -1,91 +1,85 @@
-import { Request, Response } from "express";
+import { Request } from "express";
 import bcrypt from "bcryptjs";
 import {
   registerUser,
   checkEmailTaken,
-  getUserByUsername ,
+  getUserByUsername,
 } from "../services/user.service";
-import { mapAuthResponse  } from "../mapper/user.mapper";
+import { mapAuthResponse, AuthResponse } from "../mapper/user.mapper";
 import { generateToken } from "../auth/auth.services";
-import { IUser } from "../schemas/user.schemas";
+import { HttpStatusCode } from "../constants/http-status";
+import { AuthMessages } from "../constants/messages";
+import { TypedResponse } from "../types/api-response";
 
-type UserDoc = IUser & { _id: any };
+type AuthRes = TypedResponse<AuthResponse>;
 
-export const signup = async (
-  req: Request,
-  res: Response,
-): Promise<Response> => {
+export const signup = async (req: Request, res: AuthRes): Promise<AuthRes> => {
   try {
     const { username, email, password } = req.body;
 
     const existingEmail = await checkEmailTaken(email);
     if (existingEmail) {
-      return res.status(409).json({
+      return res.status(HttpStatusCode.CONFLICT).json({
         success: false,
-        message: "A user with this email already exists",
+        message: AuthMessages.EMAIL_TAKEN,
       });
     }
 
-    const existingUsername = await getUserByUsername (username);
+    const existingUsername = await getUserByUsername(username);
     if (existingUsername) {
-      return res.status(409).json({
+      return res.status(HttpStatusCode.CONFLICT).json({
         success: false,
-        message: "Username already taken",
+        message: AuthMessages.USERNAME_TAKEN,
       });
     }
 
-    const user = (await registerUser(username, email, password)) as UserDoc;
+    const user = await registerUser(username, email, password);
     const token = generateToken(user._id, user.username);
 
-    return res.status(201).json({
+    return res.status(HttpStatusCode.CREATED).json({
       success: true,
-      message: "User registered successfully",
+      message: AuthMessages.SIGNUP_SUCCESS,
       data: mapAuthResponse(user, token),
     });
-
   } catch (err) {
-    return res.status(500).json({
+    return res.status(HttpStatusCode.INTERNAL_SERVER_ERROR).json({
       success: false,
-      message: "Something went wrong. Please try again later",
+      message: AuthMessages.SIGNUP_FAILED,
     });
   }
 };
 
-export const login = async (
-  req: Request,
-  res: Response,
-): Promise<Response> => {
+export const login = async (req: Request, res: AuthRes): Promise<AuthRes> => {
   try {
     const { username, password } = req.body;
 
-    const user = (await getUserByUsername(username)) as UserDoc | null;
+    const user = await getUserByUsername(username);
     if (!user) {
-      return res.status(401).json({
+      return res.status(HttpStatusCode.UNAUTHORIZED).json({
         success: false,
-        message: "Invalid username or password",
+        message: AuthMessages.INVALID_CREDENTIALS,
       });
     }
 
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-      return res.status(401).json({
+      return res.status(HttpStatusCode.UNAUTHORIZED).json({
         success: false,
-        message: "Invalid username or password",
+        message: AuthMessages.INVALID_CREDENTIALS,
       });
     }
 
     const token = generateToken(user._id, user.username);
 
-    return res.status(200).json({
+    return res.status(HttpStatusCode.OK).json({
       success: true,
-      message: "Login successful",
+      message: AuthMessages.LOGIN_SUCCESS,
       data: mapAuthResponse(user, token),
     });
-
   } catch (err) {
-    return res.status(500).json({
+    return res.status(HttpStatusCode.INTERNAL_SERVER_ERROR).json({
       success: false,
-      message: "Failed to login",
+      message: AuthMessages.LOGIN_FAILED,
     });
   }
 };
