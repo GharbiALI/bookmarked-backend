@@ -1,6 +1,6 @@
 import validator from "validator";
 import { BookMessages } from "../constants/messages";
-import { ValidationError } from "../types/api-responce";
+import { ValidationError } from "../types/api-response";
 
 export const validateId = (id: string): ValidationError[] | null => {
   const errors: ValidationError[] = [];
