@@ -1,6 +1,6 @@
 import validator from "validator";
 import { AuthMessages } from "../constants/messages";
-import { ValidationError } from "../types/api-responce";
+import { ValidationError } from "../types/api-response";
 
 export const validateSignup = (
   username: string,
