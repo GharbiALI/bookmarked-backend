@@ -1,4 +1,6 @@
+import { Types } from "mongoose";
 import * as bookRepository from "../../src/repository/book.repository";
+import { Book } from "../../src/schemas/book.schemas";
 import {
   listBooks,
   getBook,
@@ -9,21 +11,30 @@ import {
 
 jest.mock("../../src/repository/book.repository");
 
+const makeBookEntity = (overrides: Partial<Record<string, unknown>> = {}) =>
+  new Book({
+    title: "Atomic Habits",
+    author: "James Clear",
+    genre: "Self-help",
+    pages: 320,
+    status: "to-read",
+    rating: 0,
+    userId: new Types.ObjectId(),
+    ...overrides,
+  });
+
 describe("book.service", () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
 
   describe("listBooks", () => {
-    it("should return the books belonging to the given userId", async () => {
+    it("should return domain objects, not database entities", async () => {
       //given
-      const fakeBooks = [
-        { title: "Atomic Habits", author: "James Clear" },
-        { title: "Deep Work", author: "Cal Newport" },
-      ];
-      (bookRepository.findBooksByUserId as jest.Mock).mockResolvedValue(
-        fakeBooks,
-      );
+      const entity = makeBookEntity();
+      (bookRepository.findBooksByUserId as jest.Mock).mockResolvedValue([
+        entity,
+      ]);
 
       //when
       const result = await listBooks("someUserId");
@@ -32,7 +43,20 @@ describe("book.service", () => {
       expect(bookRepository.findBooksByUserId).toHaveBeenCalledWith(
         "someUserId",
       );
-      expect(result).toEqual(fakeBooks);
+      expect(result).toEqual([
+        {
+          id: entity._id.toString(),
+          title: "Atomic Habits",
+          author: "James Clear",
+          genre: "Self-help",
+          pages: 320,
+          status: "to-read",
+          rating: 0,
+          userId: entity.userId.toString(),
+        },
+      ]);
+      expect(result[0]).not.toBeInstanceOf(Book);
+      expect(result[0]).not.toHaveProperty("_id");
     });
 
     it("should return an empty array when the user has no books", async () => {
@@ -47,18 +71,20 @@ describe("book.service", () => {
     });
   });
 
-  describe("get Book by Id", () => {
-    it("should return the book when found", async () => {
+  describe("getBook", () => {
+    it("should return the book as a domain object when found", async () => {
       //given
-      const fakeBook = { title: "Atomic Habits", author: "James Clear" };
-      (bookRepository.findBookById as jest.Mock).mockResolvedValue(fakeBook);
+      const entity = makeBookEntity();
+      (bookRepository.findBookById as jest.Mock).mockResolvedValue(entity);
 
       //when
       const result = await getBook("someBookId");
 
       //then
       expect(bookRepository.findBookById).toHaveBeenCalledWith("someBookId");
-      expect(result).toEqual(fakeBook);
+      expect(result?.id).toBe(entity._id.toString());
+      expect(result?.userId).toBe(entity.userId.toString());
+      expect(result).not.toBeInstanceOf(Book);
     });
 
     it("should return null when the book is not found", async () => {
@@ -74,48 +100,45 @@ describe("book.service", () => {
   });
 
   describe("addBook", () => {
-    it("should create and return the new book", async () => {
+    it("should convert the userId to an ObjectId, save, and return a domain object", async () => {
       //given
-      const bookData = {
-        title: "Clean Code",
-        author: "Robert C. Martin",
-        pages: 464,
-      };
-      const fakeCreatedBook = { ...bookData, _id: "someId" };
-      (bookRepository.createBook as jest.Mock).mockResolvedValue(
-        fakeCreatedBook,
-      );
+      const userId = new Types.ObjectId().toString();
+      const dto = { title: "Clean Code", author: "Robert C. Martin", pages: 464 };
+      const saved = makeBookEntity({ ...dto, userId: new Types.ObjectId(userId) });
+      (bookRepository.createBook as jest.Mock).mockResolvedValue(saved);
 
       //when
-      const result = await addBook(bookData);
+      const result = await addBook(dto, userId);
 
       //then
-      expect(bookRepository.createBook).toHaveBeenCalledWith(bookData);
-      expect(result).toEqual(fakeCreatedBook);
+      const savedInput = (bookRepository.createBook as jest.Mock).mock
+        .calls[0][0];
+      expect(savedInput).toMatchObject(dto);
+      expect(savedInput.userId).toBeInstanceOf(Types.ObjectId);
+      expect(savedInput.userId.toString()).toBe(userId);
+      expect(result.id).toBe(saved._id.toString());
+      expect(result.userId).toBe(userId);
+      expect(result).not.toBeInstanceOf(Book);
     });
   });
 
   describe("editBook", () => {
-    it("should update and return the book", async () => {
+    it("should update and return the book as a domain object", async () => {
       //given
-      const updates = { title: "Clean Code (2nd ed.)" };
-      const fakeUpdatedBook = {
-        title: "Clean Code (2nd ed.)",
-        author: "Robert C. Martin",
-      };
-      (bookRepository.updateBookById as jest.Mock).mockResolvedValue(
-        fakeUpdatedBook,
-      );
+      const dto = { title: "Clean Code (2nd ed.)", author: "Robert C. Martin", pages: 464 };
+      const updated = makeBookEntity(dto);
+      (bookRepository.updateBookById as jest.Mock).mockResolvedValue(updated);
 
       //when
-      const result = await editBook("someBookId", updates);
+      const result = await editBook("someBookId", dto);
 
       //then
       expect(bookRepository.updateBookById).toHaveBeenCalledWith(
         "someBookId",
-        updates,
+        dto,
       );
-      expect(result).toEqual(fakeUpdatedBook);
+      expect(result?.title).toBe("Clean Code (2nd ed.)");
+      expect(result).not.toBeInstanceOf(Book);
     });
 
     it("should return null when the book to update does not exist", async () => {
@@ -123,7 +146,11 @@ describe("book.service", () => {
       (bookRepository.updateBookById as jest.Mock).mockResolvedValue(null);
 
       //when
-      const result = await editBook("someBookId", { title: "New Title" });
+      const result = await editBook("someBookId", {
+        title: "New Title",
+        author: "Someone",
+        pages: 10,
+      });
 
       //then
       expect(result).toBeNull();
@@ -131,22 +158,18 @@ describe("book.service", () => {
   });
 
   describe("removeBook", () => {
-    it("should delete and return the removed book", async () => {
+    it("should delete and return the removed book as a domain object", async () => {
       //given
-      const fakeDeletedBook = {
-        title: "Clean Code",
-        author: "Robert C. Martin",
-      };
-      (bookRepository.deleteBookById as jest.Mock).mockResolvedValue(
-        fakeDeletedBook,
-      );
+      const entity = makeBookEntity();
+      (bookRepository.deleteBookById as jest.Mock).mockResolvedValue(entity);
 
       //when
       const result = await removeBook("someBookId");
 
       //then
       expect(bookRepository.deleteBookById).toHaveBeenCalledWith("someBookId");
-      expect(result).toEqual(fakeDeletedBook);
+      expect(result?.id).toBe(entity._id.toString());
+      expect(result).not.toBeInstanceOf(Book);
     });
 
     it("should return null when the book to delete does not exist", async () => {

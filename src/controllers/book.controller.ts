@@ -1,4 +1,3 @@
-import { Types } from "mongoose";
 import { AuthRequest } from "../auth/auth.middleware";
 import {
   listBooks,
@@ -7,18 +6,23 @@ import {
   editBook,
   removeBook,
 } from "../services/book.service";
-import { mapBookResponse, mapBooksResponse, BookResponse } from "../mapper/book.mapper";
+import {
+  mapCreateBookRequest,
+  mapUpdateBookRequest,
+  mapBookResponse,
+  mapBooksResponse,
+} from "./mappers/book.mapper";
+import { BookResponseDto } from "../dto/book.dto";
 import { HttpStatusCode } from "../constants/http-status";
 import { BookMessages } from "../constants/messages";
 import { TypedResponse } from "../types/api-response";
 
 export const listBooksHandler = async (
   req: AuthRequest,
-  res: TypedResponse<BookResponse[]>,
-): Promise<TypedResponse<BookResponse[]>> => {
+  res: TypedResponse<BookResponseDto[]>,
+): Promise<TypedResponse<BookResponseDto[]>> => {
   try {
-    const userId = req.user!.userId;
-    const books = await listBooks(userId);
+    const books = await listBooks(req.user!.userId);
 
     return res.status(HttpStatusCode.OK).json({
       success: true,
@@ -35,12 +39,12 @@ export const listBooksHandler = async (
 
 export const getBookHandler = async (
   req: AuthRequest,
-  res: TypedResponse<BookResponse>,
-): Promise<TypedResponse<BookResponse>> => {
+  res: TypedResponse<BookResponseDto>,
+): Promise<TypedResponse<BookResponseDto>> => {
   try {
     const book = await getBook(req.params.id);
 
-    if (!book || book.userId.toString() !== req.user!.userId) {
+    if (!book || book.userId !== req.user!.userId) {
       return res.status(HttpStatusCode.NOT_FOUND).json({
         success: false,
         message: BookMessages.NOT_FOUND,
@@ -62,13 +66,13 @@ export const getBookHandler = async (
 
 export const createBookHandler = async (
   req: AuthRequest,
-  res: TypedResponse<BookResponse>,
-): Promise<TypedResponse<BookResponse>> => {
+  res: TypedResponse<BookResponseDto>,
+): Promise<TypedResponse<BookResponseDto>> => {
   try {
-    const userId = new Types.ObjectId(req.user!.userId);
-    const { title, author, genre, pages, status, rating } = req.body;
-
-    const book = await addBook({ title, author, genre, pages, status, rating, userId });
+    const book = await addBook(
+      mapCreateBookRequest(req.body),
+      req.user!.userId,
+    );
 
     return res.status(HttpStatusCode.CREATED).json({
       success: true,
@@ -85,20 +89,22 @@ export const createBookHandler = async (
 
 export const updateBookHandler = async (
   req: AuthRequest,
-  res: TypedResponse<BookResponse>,
-): Promise<TypedResponse<BookResponse>> => {
+  res: TypedResponse<BookResponseDto>,
+): Promise<TypedResponse<BookResponseDto>> => {
   try {
     const existing = await getBook(req.params.id);
 
-    if (!existing || existing.userId.toString() !== req.user!.userId) {
+    if (!existing || existing.userId !== req.user!.userId) {
       return res.status(HttpStatusCode.NOT_FOUND).json({
         success: false,
         message: BookMessages.NOT_FOUND,
       });
     }
 
-    const { title, author, genre, pages, status, rating } = req.body;
-    const updated = await editBook(req.params.id, { title, author, genre, pages, status, rating });
+    const updated = await editBook(
+      req.params.id,
+      mapUpdateBookRequest(req.body),
+    );
 
     // The book can be deleted between the ownership check and the update.
     if (!updated) {
@@ -128,7 +134,7 @@ export const deleteBookHandler = async (
   try {
     const existing = await getBook(req.params.id);
 
-    if (!existing || existing.userId.toString() !== req.user?.userId) {
+    if (!existing || existing.userId !== req.user?.userId) {
       return res.status(HttpStatusCode.NOT_FOUND).json({
         success: false,
         message: BookMessages.NOT_FOUND,
