@@ -1,40 +1,44 @@
 import { Request } from "express";
-import bcrypt from "bcryptjs";
+import { Types } from "mongoose";
 import {
   registerUser,
   checkEmailTaken,
-  getUserByUsername,
+  checkUsernameTaken,
+  authenticateUser,
 } from "../services/user.service";
-import { mapAuthResponse, AuthResponse } from "../mapper/user.mapper";
+import {
+  mapSignupRequest,
+  mapLoginRequest,
+  mapAuthResponse,
+} from "./mappers/user.mapper";
+import { AuthResponseDto } from "../dto/user.dto";
 import { generateToken } from "../auth/auth.services";
 import { HttpStatusCode } from "../constants/http-status";
 import { AuthMessages } from "../constants/messages";
 import { TypedResponse } from "../types/api-response";
 
-type AuthRes = TypedResponse<AuthResponse>;
+type AuthRes = TypedResponse<AuthResponseDto>;
 
 export const signup = async (req: Request, res: AuthRes): Promise<AuthRes> => {
   try {
-    const { username, email, password } = req.body;
+    const dto = mapSignupRequest(req.body);
 
-    const existingEmail = await checkEmailTaken(email);
-    if (existingEmail) {
+    if (await checkEmailTaken(dto.email)) {
       return res.status(HttpStatusCode.CONFLICT).json({
         success: false,
         message: AuthMessages.EMAIL_TAKEN,
       });
     }
 
-    const existingUsername = await getUserByUsername(username);
-    if (existingUsername) {
+    if (await checkUsernameTaken(dto.username)) {
       return res.status(HttpStatusCode.CONFLICT).json({
         success: false,
         message: AuthMessages.USERNAME_TAKEN,
       });
     }
 
-    const user = await registerUser(username, email, password);
-    const token = generateToken(user._id, user.username);
+    const user = await registerUser(dto);
+    const token = generateToken(new Types.ObjectId(user.id), user.username);
 
     return res.status(HttpStatusCode.CREATED).json({
       success: true,
@@ -51,9 +55,8 @@ export const signup = async (req: Request, res: AuthRes): Promise<AuthRes> => {
 
 export const login = async (req: Request, res: AuthRes): Promise<AuthRes> => {
   try {
-    const { username, password } = req.body;
+    const user = await authenticateUser(mapLoginRequest(req.body));
 
-    const user = await getUserByUsername(username);
     if (!user) {
       return res.status(HttpStatusCode.UNAUTHORIZED).json({
         success: false,
@@ -61,15 +64,7 @@ export const login = async (req: Request, res: AuthRes): Promise<AuthRes> => {
       });
     }
 
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
-      return res.status(HttpStatusCode.UNAUTHORIZED).json({
-        success: false,
-        message: AuthMessages.INVALID_CREDENTIALS,
-      });
-    }
-
-    const token = generateToken(user._id, user.username);
+    const token = generateToken(new Types.ObjectId(user.id), user.username);
 
     return res.status(HttpStatusCode.OK).json({
       success: true,
